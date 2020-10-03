@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Template to create Elasticsearch domain"
+
+Resources:
+    ElasticSearchCluster:            
+        Type: AWS::Elasticsearch::Domain
+        Properties: 
+            DomainName: test-elasticsearch
+            AdvancedSecurityOptions:
+                Enabled: true
+                InternalUserDatabaseEnabled: false
+                MasterUserOptions:
+                   MasterUserARN: arn:aws:iam::*************:user/test 
+            ElasticsearchVersion: 7.7
+            EncryptionAtRestOptions:
+                Enabled: true 
+            DomainEndpointOptions:
+                EnforceHTTPS: true
+            ElasticsearchClusterConfig:
+                DedicatedMasterEnabled: "true"
+                DedicatedMasterType: "c4.large.elasticsearch"
+                DedicatedMasterCount: "3"
+                InstanceCount: 2
+                InstanceType: "c4.large.elasticsearch"
+            NodeToNodeEncryptionOptions:
+                Enabled: true                
+            EBSOptions:
+                EBSEnabled: true
+                VolumeSize: 20
+                VolumeType: gp2
+            AccessPolicies:
+                Version: "2012-10-17"
+                Statement:
+                  -
+                    Effect: "Allow"
+                    Principal:
+                       AWS: "*"
+                    Action: "es:*"
+                    Resource: "arn:aws:es:us-east-1:***********:domain/test-elasticsearch/*"
+
+Outputs:
+  ESCluster:
+    Description: The ES Cluster
+    Value: !Ref ElasticSearchCluster

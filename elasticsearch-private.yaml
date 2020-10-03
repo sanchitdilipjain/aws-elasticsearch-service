@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Template to create ElasticSearch domain"
+
+Parameters:
+    VPC:
+        Type: String
+        Description: The ID of your VPC
+        Default: vpc-ID
+
+    PrivateSubnet01:
+        Type: String
+        Description: The ID of your subnet
+        Default: subnet-ID
+
+    UserName:
+        Type: String
+        Description: The ES master user Name
+
+    UserPassword:
+        Type: String
+        Description: The ES master user Password
+        NoEcho: true
+
+Resources:
+    ESSecurityGroup:
+        Type: "AWS::EC2::SecurityGroup"
+        Properties:
+            GroupDescription: "security group for ES Cluster access"
+            GroupName: "test-ES-sg"
+            VpcId: !Ref VPC
+            SecurityGroupIngress: 
+              - 
+                CidrIp: "0.0.0.0/0"
+                FromPort: 80
+                IpProtocol: "tcp"
+                ToPort: 80
+
+              - 
+                CidrIp: "0.0.0.0/0"
+                FromPort: 443
+                IpProtocol: "tcp"
+                ToPort: 443
+
+            SecurityGroupEgress: 
+              - 
+                CidrIp: "0.0.0.0/0"
+                IpProtocol: "-1"
+
+    ElasticSearchCluster:            
+        Type: AWS::Elasticsearch::Domain
+        Properties: 
+            DomainName: test-elasticsearch
+            AdvancedSecurityOptions:
+                Enabled: true
+                InternalUserDatabaseEnabled: true
+                MasterUserOptions:
+                   MasterUserName: !Ref UserName
+                   MasterUserPassword: !Ref UserPassword 
+            ElasticsearchVersion: 7.7
+            EncryptionAtRestOptions:
+                Enabled: true 
+            DomainEndpointOptions:
+                EnforceHTTPS: true
+            ElasticsearchClusterConfig:
+                DedicatedMasterEnabled: "true"
+                DedicatedMasterType: "c4.large.elasticsearch"
+                DedicatedMasterCount: "3"
+                InstanceCount: 1
+                InstanceType: c4.large.elasticsearch
+            NodeToNodeEncryptionOptions:
+                Enabled: true                
+            EBSOptions:
+                EBSEnabled: true
+                VolumeSize: 20
+                VolumeType: gp2
+            VPCOptions: 
+                SecurityGroupIds:
+                  - !Ref ESSecurityGroup
+                SubnetIds:
+                  - !Ref PrivateSubnet01
+            AccessPolicies:
+                Version: "2012-10-17"
+                Statement:
+                  -
+                    Effect: "Allow"
+                    Principal:
+                       AWS: "*"
+                    Action: "es:*"
+                    Resource: "arn:aws:es:us-east-1:************:domain/test-elasticsearch/*"
+
+Outputs:
+  ESCluster:
+    Description: Public Subnet 01 ID in the VPC
+    Value: !Ref ElasticSearchCluster
